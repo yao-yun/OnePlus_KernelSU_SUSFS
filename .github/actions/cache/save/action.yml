@@ -68,13 +68,16 @@ runs:
         git fetch --tags --force
         
         if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-          echo "Tag '$TAG_NAME' not found. Creating backdated release..."
+          echo "Tag '$TAG_NAME' not found. Creating backdated tag..."
           GIT_COMMITTER_DATE="2015-01-01T12:00:00" git tag -a "$TAG_NAME" -m "General Cache Storage"
-          if git push origin "$TAG_NAME" --force; then
-            gh release create "$TAG_NAME" --title "General Cache" --notes "Automated storage for build assets" --repo "$TARGET_REPO" || true
-          else
-            echo "Push failed, tag might have been created by a parallel job. Continuing..."
-          fi
+          git push origin "$TAG_NAME" --force || echo "Push failed, tag might have been created by a parallel job. Continuing..."
+        else
+          echo "Tag '$TAG_NAME' already exists."
+        fi
+
+        if ! gh release view "$TAG_NAME" --repo "$TARGET_REPO" >/dev/null 2>&1; then
+          echo "Release '$TAG_NAME' not found. Creating..."
+          gh release create "$TAG_NAME" --title "General Cache" --notes "Automated storage for build assets" --repo "$TARGET_REPO" || true
         else
           echo "Release '$TAG_NAME' already exists. Ready for upload."
         fi
@@ -141,8 +144,10 @@ runs:
             for part in "${FILENAME}".part*; do
               echo "Uploading $part..."
               if ! upload_with_retry "$part"; then
-                echo "::error::Failed to upload part $part after multiple attempts."
-                exit 1
+                echo "::warning::Failed to upload part $part after multiple attempts. Cache save skipped."
+                rm -f "${FILENAME}" "${FILENAME}".part*
+                echo "::endgroup::"
+                exit 0
               fi
               rm -f "$part"
             done
@@ -150,8 +155,10 @@ runs:
           else
             echo "Uploading $FILENAME..."
             if ! upload_with_retry "$FILENAME"; then
-              echo "::error::Failed to upload $FILENAME after multiple attempts."
-              exit 1
+              echo "::warning::Failed to upload $FILENAME after multiple attempts. Cache save skipped."
+              rm -f "$FILENAME"
+              echo "::endgroup::"
+              exit 0
             fi
             rm -f "$FILENAME"
           fi
