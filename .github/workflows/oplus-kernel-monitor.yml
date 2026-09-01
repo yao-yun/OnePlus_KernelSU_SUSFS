@@ -331,6 +331,11 @@ jobs:
       - name: Manage Notification Issue
         if: steps.scanner.outputs.changes_found == 'true'
         run: |
+          if [ "$(gh repo view ${{ github.repository }} --json hasIssuesEnabled --jq '.hasIssuesEnabled')" != "true" ]; then
+            echo "::notice::Repository issues are disabled; skipping update notification."
+            exit 0
+          fi
+
           gh label create "notification" --color "BFD4F2" --repo ${{ github.repository }} --force || true
           DATE_TITLE="Kernel Updates - $(date +'%Y-%m-%d')"
           ISSUE_NUMBER=$(gh issue list --repo ${{ github.repository }} --label "notification" --state "open" --search "$DATE_TITLE" --json number --jq '.[0].number')
