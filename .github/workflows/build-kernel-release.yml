@@ -5,6 +5,14 @@ permissions:
   actions: write
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'configs/a16/OP15.json'
+      - 'manifests/a16/oneplus_15_w.xml'
+      - '.github/actions/**'
+      - '.github/workflows/build-kernel-release.yml'
   workflow_dispatch:
     inputs:
       make_release:
@@ -79,6 +87,12 @@ on:
         type: string
         default: ''
 
+env:
+  BUILD_OP_MODEL: ${{ inputs.op_model || 'android16-6.12' }}
+  BUILD_KSU_OPTIONS: >-
+    ${{ inputs.ksu_options || '[{"type":"ksun","hash":"dev"}]' }}
+  BUILD_OPTIMIZE_LEVEL: ${{ inputs.optimize_level || 'O2' }}
+
 jobs:
   set-op-model:
     runs-on: ubuntu-latest
@@ -112,8 +126,8 @@ jobs:
           set -euo pipefail
           echo "::group::Matrix generation"
           
-          input="${{ github.event.inputs.op_model }}"
-          ksu_options_raw='${{ github.event.inputs.ksu_options }}'
+          input="${{ env.BUILD_OP_MODEL }}"
+          ksu_options_raw='${{ env.BUILD_KSU_OPTIONS }}'
           if ! ksu_options_normalized=$(echo "$ksu_options_raw" | jq -c 'map(if .type then .type |= ascii_upcase | if .hash == null then if .type == "KSUN" then .hash = "dev" elif .type == "KSU" then .hash = "main" else .hash end else . end else error("No type found") end)' 2>&1); then
             echo "::error::ksu_options validation failed: $ksu_options_normalized"
             exit 1
@@ -469,7 +483,7 @@ jobs:
             cat << 'EOF'
           ## 🎯 Build Plan
           
-          **Target:** ${{ inputs.op_model }}  
+          **Target:** ${{ env.BUILD_OP_MODEL }}<br>
           **Devices:** ${{ steps.set-matrix.outputs.count }}  
           
           **Configuration:**
@@ -479,7 +493,7 @@ jobs:
             echo "- Build Timestamp: $build_ts_display"
           
             cat << 'EOF'
-          - Optimization: ${{ inputs.optimize_level }}
+          - Optimization: ${{ env.BUILD_OPTIMIZE_LEVEL }}
           - Clean Build/No Ccache: ${{ inputs.clean_build && '✅ Yes' || '❌ No' }}
           - Create Release: ${{ inputs.make_release && '✅ Yes' || '❌ No' }}
           - Create Debug Artifacts: ${{ inputs.debug && '✅ Yes' || '❌ No' }}
@@ -530,9 +544,9 @@ jobs:
           echo "> **💡 Note:** Hashes are resolved at run time via API calls before builds start." >> $GITHUB_STEP_SUMMARY
           
           # Add A restriction note for android-kernel filters
-          if [[ "${{ inputs.op_model }}" == android*-*.* ]]; then
+          if [[ "${{ env.BUILD_OP_MODEL }}" == android*-*.* ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> **⚠️ Android-Kernel Filter:** Only A15 and A16 devices will be built for \`${{ inputs.op_model }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "> **⚠️ Android-Kernel Filter:** Only A15 and A16 devices will be built for \`${{ env.BUILD_OP_MODEL }}\`" >> $GITHUB_STEP_SUMMARY
           fi
 
   mirror_toolchain:
@@ -698,7 +712,7 @@ jobs:
           ksu_type: ${{ matrix.ksu_type }}
           ksu_branch_or_hash: ${{ matrix.ksu_resolved_hash }}
           susfs_commit_hash_or_branch: ${{ matrix.susfs_resolved_hash }}
-          optimize_level: ${{ inputs.optimize_level }}
+          optimize_level: ${{ env.BUILD_OPTIMIZE_LEVEL }}
           build_timestamp: ${{ inputs.build_timestamp }}
           clean: ${{ inputs.clean_build }}
           debug: ${{ inputs.debug }}
@@ -925,7 +939,7 @@ jobs:
           ksu_ref="${{ fromJSON(needs.set-op-model.outputs.ksu_options_normalized)[0].hash }}"
           ksu_resolved_hash="${{ needs.set-op-model.outputs.ksu_resolved_hash }}"
           
-          OPTIMIZE_LEVEL="${{ inputs.optimize_level }}"
+          OPTIMIZE_LEVEL="${{ env.BUILD_OPTIMIZE_LEVEL }}"
           CLEAN_BUILD="${{ inputs.clean_build }}"
           
           # Hash map for GKI version
@@ -1211,7 +1225,7 @@ jobs:
           - Added IP_SET, IPv6 NAT and TTL support.
           - Added TMPFS_XATTR and TMPFS_POSIX_ACL support for Mountify.
           - Added Ptrace leak fix for kernels < 5.16.
-          - Compiler optimizations (${{ inputs.optimize_level }}).
+          - Compiler optimizations (${{ env.BUILD_OPTIMIZE_LEVEL }}).
           - Additional General Optimisations.
           - Wild_KSU Manager Support.
           - Unicode Bypass Fix
