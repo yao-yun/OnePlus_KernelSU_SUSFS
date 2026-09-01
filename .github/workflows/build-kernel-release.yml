@@ -90,8 +90,10 @@ on:
 env:
   BUILD_OP_MODEL: ${{ inputs.op_model || 'android16-6.12' }}
   BUILD_KSU_OPTIONS: >-
-    ${{ inputs.ksu_options || '[{"type":"ksun","hash":"dev"}]' }}
+    ${{ github.event_name == 'push' && '[{"type":"ksun","hash":"36874077d8ec513d9e2cc05d7dc884c3aaf1f604"}]' || inputs.ksu_options || '[{"type":"ksun","hash":"dev"}]' }}
   BUILD_OPTIMIZE_LEVEL: ${{ inputs.optimize_level || 'O2' }}
+  BUILD_SUSFS_ANDROID16: >-
+    ${{ github.event_name == 'push' && 'f37930f374ef88de990d6abea0c67d0ea28c1edc' || inputs.android16-6_12_susfs_branch_or_commit }}
 
 jobs:
   set-op-model:
@@ -298,7 +300,7 @@ jobs:
             ["android13-5.15"]="${{ inputs.android13-5_15_susfs_branch_or_commit }}"
             ["android14-6.1"]="${{ inputs.android14-6_1_susfs_branch_or_commit }}"
             ["android15-6.6"]="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
-            ["android16-6.12"]="${{ inputs.android16-6_12_susfs_branch_or_commit }}"
+            ["android16-6.12"]="${{ env.BUILD_SUSFS_ANDROID16 }}"
           )
           
           mapfile -t active_keys < <(
@@ -509,7 +511,7 @@ jobs:
             ["android13-5.15"]="${{ inputs.android13-5_15_susfs_branch_or_commit }}"
             ["android14-6.1"]="${{ inputs.android14-6_1_susfs_branch_or_commit }}"
             ["android15-6.6"]="${{ inputs.android15-6_6_susfs_branch_or_commit }}"
-            ["android16-6.12"]="${{ inputs.android16-6_12_susfs_branch_or_commit }}"
+            ["android16-6.12"]="${{ env.BUILD_SUSFS_ANDROID16 }}"
           )
           
           declare -A step_hashes=(
