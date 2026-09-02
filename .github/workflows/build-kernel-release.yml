@@ -90,7 +90,7 @@ on:
 env:
   BUILD_OP_MODEL: ${{ inputs.op_model || 'android16-6.12' }}
   BUILD_KSU_OPTIONS: >-
-    ${{ github.event_name == 'push' && '[{"type":"ksun","hash":"36874077d8ec513d9e2cc05d7dc884c3aaf1f604"}]' || inputs.ksu_options || '[{"type":"ksun","hash":"dev"}]' }}
+    ${{ github.event_name == 'push' && '[{"type":"ksun","hash":"234f6e040fcbca18b16d2398e1aa225712ec99ad"}]' || inputs.ksu_options || '[{"type":"ksun","hash":"dev"}]' }}
   BUILD_OPTIMIZE_LEVEL: ${{ inputs.optimize_level || 'O2' }}
   BUILD_SUSFS_ANDROID16: >-
     ${{ github.event_name == 'push' && 'f37930f374ef88de990d6abea0c67d0ea28c1edc' || inputs.android16-6_12_susfs_branch_or_commit }}

@@ -17,7 +17,7 @@
   "susfs": true,
   "opt": true,
   "ds": true,
-  "bbg": false,
+  "bbg": true,
   "bbr": true,
   "bbr3": false,
   "ttl": true,
